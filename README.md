@@ -6,7 +6,7 @@ Long-running agents lose track of time.
 
 - ✔︎ Cache-friendly
 - ✔︎ Behind the scenes; non-disruptive
-- ✔︎ Tactful: injects the current time at most once per 15-minute window
+- ✔︎ Tactful: injects the current time at a configurable cadence
 
 I wanted the equivalent of the agent glancing at a wristwatch.
 
@@ -16,7 +16,24 @@ I wanted the equivalent of the agent glancing at a wristwatch.
 pi install npm:@giladbarnea/pi-time-sense
 ```
 
-There is nothing to configure.
+No configuration is required.
+
+## Configure
+
+The default interval is 15 minutes.
+
+Run `/time-sense` to change it. Or edit `~/.pi/agent/pi-time-sense.json`:
+
+```json
+{
+  "intervalMinutes": 5,
+  "slashTimeSenseSettings": true
+}
+```
+
+`slashTimeSenseSettings` controls whether `/time-sense` is available. It defaults to `true`.
+
+Changes made with `/time-sense` apply immediately. After editing the file, run `/reload`.
 
 ## What it does
 
@@ -35,9 +52,9 @@ There is nothing to configure.
 - A tool call finishes
 - A run fully settles
 
-### Why "at most" every 15 minutes?
+### Why "at most"?
 
-`pi-time-sense` is **opportunistic**. The 15-minute interval sets its cadence, not an alarm.
+`pi-time-sense` is **opportunistic**. The configured interval sets its cadence, not an alarm.
 
 It hitchhikes on activity already happening in the session.
 

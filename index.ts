@@ -2,7 +2,7 @@
  * pi-time-sense: give the agent a live sense of time during long autonomous runs.
  *
  * Injection is triggered by activity, never by wall time (no alarm): the
- * 15-minute interval only throttles cadence. Three hooks, each chosen because
+ * configured interval only throttles cadence. Three hooks, each chosen because
  * delivery there can never cause an LLM turn of its own:
  *
  * - before_agent_start: the returned message is persisted and rides into the
@@ -22,9 +22,60 @@
  * tail, so the prompt prefix stays byte-stable and fully cacheable. No
  * per-call injection, no system-prompt mutation.
  */
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const INJECTION_INTERVAL_MILLISECONDS = 15 * 60 * 1000;
+interface TimeSenseConfiguration {
+  intervalMinutes: number;
+  slashTimeSenseSettings: boolean;
+}
+
+const DEFAULT_CONFIGURATION: TimeSenseConfiguration = {
+  intervalMinutes: 15,
+  slashTimeSenseSettings: true,
+};
+const MILLISECONDS_PER_MINUTE = 60 * 1000;
+const CONFIGURATION_PATH = join(getAgentDir(), "pi-time-sense.json");
+
+/**
+ * @example parseIntervalMinutes(5) // 5
+ */
+function parseIntervalMinutes(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error("Interval must be a number greater than 0");
+  }
+  return value;
+}
+
+function parseConfiguration(value: unknown): TimeSenseConfiguration {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${CONFIGURATION_PATH} must contain a JSON object`);
+  }
+
+  const configuration = value as Record<string, unknown>;
+  const intervalMinutes = configuration.intervalMinutes ?? DEFAULT_CONFIGURATION.intervalMinutes;
+  const slashTimeSenseSettings =
+    configuration.slashTimeSenseSettings ?? DEFAULT_CONFIGURATION.slashTimeSenseSettings;
+
+  if (typeof slashTimeSenseSettings !== "boolean") {
+    throw new Error("slashTimeSenseSettings must be true or false");
+  }
+
+  return {
+    intervalMinutes: parseIntervalMinutes(intervalMinutes),
+    slashTimeSenseSettings,
+  };
+}
+
+function loadConfiguration(): TimeSenseConfiguration {
+  if (!existsSync(CONFIGURATION_PATH)) return { ...DEFAULT_CONFIGURATION };
+  return parseConfiguration(JSON.parse(readFileSync(CONFIGURATION_PATH, "utf8")) as unknown);
+}
+
+function saveConfiguration(configuration: TimeSenseConfiguration): void {
+  writeFileSync(CONFIGURATION_PATH, `${JSON.stringify(configuration, null, 2)}\n`, "utf8");
+}
 
 const timeFormat = new Intl.DateTimeFormat("en-CA", {
   weekday: "short",
@@ -56,6 +107,7 @@ function humanizeDuration(milliseconds: number): string {
 }
 
 export default function piTimeSense(pi: ExtensionAPI): void {
+  let configuration = loadConfiguration();
   let sessionStartMilliseconds = Date.now();
   let lastInjectionMilliseconds = 0; // 0 → first activity injects immediately
 
@@ -67,7 +119,9 @@ export default function piTimeSense(pi: ExtensionAPI): void {
   /** One fresh time marker per throttle window; undefined while within it. */
   function staleTimeText(): string | undefined {
     const nowMilliseconds = Date.now();
-    if (nowMilliseconds - lastInjectionMilliseconds < INJECTION_INTERVAL_MILLISECONDS) return undefined;
+    if (nowMilliseconds - lastInjectionMilliseconds < configuration.intervalMinutes * MILLISECONDS_PER_MINUTE) {
+      return undefined;
+    }
     lastInjectionMilliseconds = nowMilliseconds;
     return `<current-time>${formatCurrentTime(new Date(nowMilliseconds))} (session +${humanizeDuration(nowMilliseconds - sessionStartMilliseconds)})</current-time>`;
   }
@@ -85,4 +139,45 @@ export default function piTimeSense(pi: ExtensionAPI): void {
   pi.on("tool_execution_end", sendCurrentTime);
 
   pi.on("agent_settled", sendCurrentTime);
+
+  if (!configuration.slashTimeSenseSettings) return;
+
+  pi.registerCommand("time-sense", {
+    description: "Configure pi-time-sense",
+    handler: async (_args, ctx) => {
+      const intervalChoice = `Injection interval · ${configuration.intervalMinutes} minutes`;
+      const slashSettingsChoice = "/time-sense settings · enabled";
+      const choice = await ctx.ui.select("pi-time-sense", [intervalChoice, slashSettingsChoice]);
+      if (choice === undefined) return;
+
+      if (choice === intervalChoice) {
+        const input = await ctx.ui.input(
+          "Injection interval",
+          `Minutes (current: ${configuration.intervalMinutes})`,
+        );
+        if (input === undefined) return;
+
+        try {
+          const intervalMinutes = parseIntervalMinutes(Number(input));
+          configuration = { ...configuration, intervalMinutes };
+          saveConfiguration(configuration);
+          ctx.ui.notify(`Time injection interval: ${intervalMinutes} minutes`, "info");
+        } catch (error) {
+          ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+        }
+        return;
+      }
+
+      const confirmed = await ctx.ui.confirm(
+        "Disable /time-sense?",
+        'The command will disappear after reload. You can always re-enable it by setting "slashTimeSenseSettings": true in ~/.pi/agent/pi-time-sense.json.',
+      );
+      if (!confirmed) return;
+
+      configuration = { ...configuration, slashTimeSenseSettings: false };
+      saveConfiguration(configuration);
+      ctx.ui.notify("Disabled /time-sense settings", "info");
+      await ctx.reload();
+    },
+  });
 }
