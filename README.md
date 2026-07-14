@@ -1,12 +1,12 @@
 # pi-time-sense
 
-Long-running agents lose track of time. `pi-time-sense` quietly keeps your Pi agent current with the local time and elapsed session duration.
+Long-running agents lose track of time. `pi-time-sense` quietly gives you Pi agent temporal awareness. 
 
-It adds a small, hidden timestamp only in response to session activity, and no more than once every 15 minutes. There is no timer. It never wakes an idle agent or starts a turn of its own.
+- ✔︎ Cache-friendly
+- ✔︎ Acts behind the scenes; non-disruptive
+- ✔︎ Tactful: no more than once in a 15 minute window <!-- reads nicely but assumes understanding of something no yet explained: does what no more than once? "quietly gives temporal awareness" isn't answering this question well enough. Ideally: one verb at the beginning of sentence. `Tactful: {...} no more than once in a ...` -->
 
-```xml
-<current-time>Mon 2026-07-13 07:05:13 GMT+3 (session +18m4s)</current-time>
-```
+I wanted to give the agent the equivalent of habitually checking a handwatch.  <!-- awkward, polish here -->
 
 ## Install
 
@@ -16,8 +16,34 @@ pi install npm:@giladbarnea/pi-time-sense
 
 There is nothing to configure.
 
+## What it does
+
+- It adds a small, hidden timestamp only in response to session activity.
+- It never wakes an idle agent or starts a turn of its own.
+
+```xml
+<current-time>Mon 2026-07-13 07:05:13 GMT+3 (session +18m4s)</current-time>
+```
+
+
 ## How it works
 
-A timestamp joins the agent's context when a prompt starts, after a tool finishes, or once a run fully settles. If the agent does nothing, `pi-time-sense` does nothing.
+`pi-time-sense` uses/can use (potentially)? three (potential)? opportunities to (add the current time|join a timestamp to the agent's context):
+- User just sent a message <!-- `User sends a message` tense? -->
+- Tool call finished
+- Run fully settled
 
-Each timestamp is persisted at the end of the transcript. The model sees it; the UI does not. Because `pi-time-sense` only appends, the existing prompt prefix remains cacheable.
+### Once every 15 minutes?
+
+If the agent does nothing, `pi-time-sense` does nothing.
+
+`pi-time-sense` is **opportunistic**. It hitchhikes on ...  <!-- complete here -->
+
+Technically:
+- Each timestamp is persisted at the end of the transcript.
+- The model sees it ("senses" it 🙂)
+- Invisible in the UI
+
+## Cache-friendly
+
+Because `pi-time-sense` only appends, the existing prompt prefix remains cacheable. Cache works as usual.
