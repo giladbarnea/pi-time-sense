@@ -1,13 +1,15 @@
 {
   "name": "@giladbarnea/pi-time-sense",
   "version": "1.0.0",
-  "description": "Give Pi agents accurate wall time and session duration without timer-driven turns or prompt-cache churn.",
+  "description": "Give Pi agents ongoing sense of time.",
   "keywords": [
     "pi-package",
     "pi",
+    "pi-agent",
     "pi-coding-agent",
     "time",
     "temporal-awareness",
+    "chronology",
     "agent"
   ],
   "author": "Gilad Barnea",
