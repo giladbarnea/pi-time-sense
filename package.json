@@ -1,6 +1,6 @@
 {
   "name": "@giladbarnea/pi-time-sense",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Give Pi agents ongoing sense of time.",
   "keywords": [
     "pi-package",
