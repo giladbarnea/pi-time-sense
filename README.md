@@ -1,6 +1,8 @@
 # pi-time-sense
 
-Long-running agents lose track of time. `pi-time-sense` quietly gives your Pi agent temporal awareness.
+Long-running agents lose track of time.
+
+`pi-time-sense` quietly gives your Pi agent temporal awareness.
 
 - ✔︎ Cache-friendly
 - ✔︎ Behind the scenes; non-disruptive
@@ -37,7 +39,9 @@ There is nothing to configure.
 
 `pi-time-sense` is **opportunistic**. The 15-minute interval sets its cadence, not an alarm.
 
-It hitchhikes on activity already happening in the session. If the agent does nothing, `pi-time-sense` does nothing.
+It hitchhikes on activity already happening in the session.
+
+If the agent does nothing, `pi-time-sense` does nothing.
 
 Technically, each timestamp is:
 
