@@ -1,0 +1,38 @@
+{
+  "name": "@giladbarnea/pi-time-sense",
+  "version": "1.0.0",
+  "description": "Give Pi agents accurate wall time and session duration without timer-driven turns or prompt-cache churn.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "time",
+    "temporal-awareness",
+    "agent"
+  ],
+  "author": "Gilad Barnea",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giladbarnea/pi-time-sense.git"
+  },
+  "homepage": "https://github.com/giladbarnea/pi-time-sense",
+  "bugs": {
+    "url": "https://github.com/giladbarnea/pi-time-sense/issues"
+  },
+  "files": [
+    "index.ts",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
