@@ -46,11 +46,10 @@ Changes made with `/time-sense` apply immediately. After editing the file, run `
 
 ## How it works
 
-`pi-time-sense` looks for three opportunities to add the current time:
+`pi-time-sense` looks for two opportunities to add the current time:
 
 - You send a message
 - A tool call finishes
-- A run fully settles
 
 ### Why "at most"?
 

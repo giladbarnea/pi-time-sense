@@ -2,7 +2,7 @@
  * pi-time-sense: give the agent a live sense of time during long autonomous runs.
  *
  * Injection is triggered by activity, never by wall time (no alarm): the
- * configured interval only throttles cadence. Three hooks, each chosen because
+ * configured interval only throttles cadence. Two hooks, each chosen because
  * delivery there can never cause an LLM turn of its own:
  *
  * - before_agent_start: the returned message is persisted and rides into the
@@ -10,8 +10,6 @@
  * - tool_execution_end: the loop still owes the model a call to deliver the
  *   tool result; the optionless sendMessage lands in the steering queue and is
  *   consumed by that call.
- * - agent_settled: the session is idle, so the same call silently appends to
- *   context; the agent reads it on whatever turn comes next.
  *
  * Why not turn_start (the previous design): a message steered during the
  * run's final text-only turn is left in the steering queue and drained as a
@@ -137,8 +135,6 @@ export default function piTimeSense(pi: ExtensionAPI): void {
   });
 
   pi.on("tool_execution_end", sendCurrentTime);
-
-  pi.on("agent_settled", sendCurrentTime);
 
   if (!configuration.slashTimeSenseSettings) return;
 
