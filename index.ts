@@ -120,8 +120,8 @@ export default function piTimeSense(pi: ExtensionAPI): void {
     if (nowMilliseconds - lastInjectionMilliseconds < configuration.intervalMinutes * MILLISECONDS_PER_MINUTE) {
       return undefined;
     }
-    lastInjectionMilliseconds = nowMilliseconds;
-    return `<current-time>${formatCurrentTime(new Date(nowMilliseconds))} (session +${humanizeDuration(nowMilliseconds - sessionStartMilliseconds)})</current-time>`;
+    lastInjectionMilliseconds = nowMilliseconds;  // is lastInjectionMilliseconds unused on purpose? 
+    return `<automatic-current-time-message>${formatCurrentTime(new Date(nowMilliseconds))} (session +${humanizeDuration(nowMilliseconds - sessionStartMilliseconds)})</automatic-current-time-message> (send by Pi.)`;
   }
 
   function sendCurrentTime(): void {
