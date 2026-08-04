@@ -121,7 +121,7 @@ export default function piTimeSense(pi: ExtensionAPI): void {
       return undefined;
     }
     lastInjectionMilliseconds = nowMilliseconds;  // is lastInjectionMilliseconds unused on purpose? 
-    return `<automatic-current-time-message>${formatCurrentTime(new Date(nowMilliseconds))} (session +${humanizeDuration(nowMilliseconds - sessionStartMilliseconds)})</automatic-current-time-message> (send by Pi.)`;
+    return `<automatic-current-time-message>${formatCurrentTime(new Date(nowMilliseconds))} (session +${humanizeDuration(nowMilliseconds - sessionStartMilliseconds)})</automatic-current-time-message> (Sent by Pi.)`;
   }
 
   function sendCurrentTime(): void {
