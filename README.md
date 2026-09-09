@@ -44,6 +44,8 @@ Changes made with `/time-sense` apply immediately. After editing the file, run `
 <current-time>Mon 2026-07-13 07:05:13 GMT+3 (session +18m4s)</current-time>
 ```
 
+The elapsed time stays anchored to the oldest available session in its ancestry. Pi forks and `pi-user-agents` sessions inherit this clock through any ancestry depth.
+
 ## How it works
 
 `pi-time-sense` looks for two opportunities to add the current time:

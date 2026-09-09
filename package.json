@@ -14,6 +14,7 @@
   ],
   "author": "Gilad Barnea",
   "license": "MIT",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/giladbarnea/pi-time-sense.git"
@@ -26,6 +27,11 @@
     "index.ts",
     "README.md"
   ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run test && npm run typecheck"
+  },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
   },
@@ -36,5 +42,10 @@
     "extensions": [
       "./index.ts"
     ]
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
   }
 }

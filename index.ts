@@ -20,9 +20,14 @@
  * tail, so the prompt prefix stays byte-stable and fully cacheable. No
  * per-call injection, no system-prompt mutation.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { createInterface } from "node:readline";
+import {
+  getAgentDir,
+  type ExtensionAPI,
+  type SessionHeader,
+} from "@earendil-works/pi-coding-agent";
 
 interface TimeSenseConfiguration {
   intervalMinutes: number;
@@ -35,6 +40,38 @@ const DEFAULT_CONFIGURATION: TimeSenseConfiguration = {
 };
 const MILLISECONDS_PER_MINUTE = 60 * 1000;
 const CONFIGURATION_PATH = join(getAgentDir(), "pi-time-sense.json");
+
+/** Read only the JSONL header because parent transcripts can be large. */
+async function readSessionHeader(sessionFile: string): Promise<SessionHeader> {
+  const input = createReadStream(sessionFile, { encoding: "utf8" });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+
+  try {
+    for await (const line of lines) return JSON.parse(line) as SessionHeader;
+  } finally {
+    lines.close();
+    input.destroy();
+  }
+
+  throw new Error(`${sessionFile} is empty`);
+}
+
+/** Follow Pi's parent-session paths until the oldest header that remains on disk. */
+async function oldestAvailableSessionStartMilliseconds(
+  currentHeader: SessionHeader,
+): Promise<number> {
+  let ancestorHeader = currentHeader;
+
+  while (ancestorHeader.parentSession && existsSync(ancestorHeader.parentSession)) {
+    ancestorHeader = await readSessionHeader(ancestorHeader.parentSession);
+  }
+
+  const milliseconds = Date.parse(ancestorHeader.timestamp);
+  if (!Number.isFinite(milliseconds)) {
+    throw new Error(`Invalid session timestamp: ${ancestorHeader.timestamp}`);
+  }
+  return milliseconds;
+}
 
 /**
  * @example parseIntervalMinutes(5) // 5
@@ -109,9 +146,11 @@ export default function piTimeSense(pi: ExtensionAPI): void {
   let sessionStartMilliseconds = Date.now();
   let lastInjectionMilliseconds = 0; // 0 → first activity injects immediately
 
-  pi.on("session_start", () => {
-    sessionStartMilliseconds = Date.now();
+  pi.on("session_start", async (_event, ctx) => {
     lastInjectionMilliseconds = 0;
+    const header = ctx.sessionManager.getHeader();
+    if (!header) throw new Error("The current session has no session header");
+    sessionStartMilliseconds = await oldestAvailableSessionStartMilliseconds(header);
   });
 
   /** One fresh time marker per throttle window; undefined while within it. */
