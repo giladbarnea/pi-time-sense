@@ -7,9 +7,8 @@
  *
  * - before_agent_start: the returned message is persisted and rides into the
  *   LLM call the user's prompt already scheduled.
- * - tool_execution_end: the loop still owes the model a call to deliver the
- *   tool result; the optionless sendMessage lands in the steering queue and is
- *   consumed by that call.
+ * - tool_execution_end: a context-only message is persisted after the turn's
+ *   tool results, without requesting another model call.
  *
  * Why not turn_start (the previous design): a message steered during the
  * run's final text-only turn is left in the steering queue and drained as a
@@ -165,7 +164,7 @@ export default function piTimeSense(pi: ExtensionAPI): void {
 
   function sendCurrentTime(): void {
     const text = staleTimeText();
-    if (text) pi.sendMessage({ customType: "pi-time-sense", content: text, display: false });
+    if (text) pi.sendMessage({ customType: "pi-time-sense", content: text, display: false }, { triggerTurn: false });
   }
 
   pi.on("before_agent_start", () => {
