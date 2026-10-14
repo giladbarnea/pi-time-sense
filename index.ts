@@ -146,9 +146,14 @@ export default function piTimeSense(pi: ExtensionAPI): void {
   let lastInjectionMilliseconds = 0; // 0 → first activity injects immediately
 
   pi.on("session_start", async (_event, ctx) => {
-    lastInjectionMilliseconds = 0;
     const header = ctx.sessionManager.getHeader();
     if (!header) throw new Error("The current session has no session header");
+    const inheritedTimestamp = header.parentSession
+      ? ctx.sessionManager.getBranch().reverse().find(
+          (entry) => entry.type === "custom_message" && entry.customType === "pi-time-sense",
+        )
+      : undefined;
+    lastInjectionMilliseconds = inheritedTimestamp ? Date.parse(inheritedTimestamp.timestamp) : 0;
     sessionStartMilliseconds = await oldestAvailableSessionStartMilliseconds(header);
   });
 

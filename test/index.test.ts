@@ -83,6 +83,7 @@ function createHarness(currentHeader: SessionHeader) {
   const context = {
     sessionManager: {
       getHeader: () => currentHeader,
+      getBranch: () => [],
     },
   } as unknown as ExtensionContext;
 
