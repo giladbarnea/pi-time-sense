@@ -8,8 +8,8 @@ import {
   fauxProvider,
   fauxToolCall,
   InMemoryCredentialStore,
-  Type,
 } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
 import {
   createAgentSession,
   DefaultResourceLoader,
