@@ -1,0 +1,64 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pi: ["1.4.0", "1.5.2"]
+    env:
+      PI_VERSION: ${{ matrix.pi }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+      - name: Install test dependencies
+        run: |
+          : "${PI_VERSION:?PI_VERSION must name the supported Pi pin}"
+          npm ci --ignore-scripts
+          npm install --no-save --package-lock=false --ignore-scripts \
+            "@earendil-works/pi-ai@$PI_VERSION" \
+            "@earendil-works/pi-coding-agent@$PI_VERSION" \
+            "@earendil-works/pi-tui@$PI_VERSION"
+      - name: Verify Pi versions
+        run: |
+          node --version
+          npm --version
+          bun --version
+          node <<'NODE'
+          const expected = process.env.PI_VERSION;
+          if (!expected) throw new Error("PI_VERSION is required");
+          for (const name of ["pi-ai", "pi-coding-agent", "pi-tui"]) {
+            const actual = require(`./node_modules/@earendil-works/${name}/package.json`).version;
+            console.log(`${name}: ${actual}`);
+            if (actual !== expected) {
+              throw new Error(`Expected ${name} ${expected}, got ${actual}`);
+            }
+          }
+          NODE
+      - name: Check behavior in an isolated home
+        run: |
+          isolation="$(mktemp -d)"
+          mkdir -p "$isolation/home" "$isolation/agent"
+          env -i PATH="$PATH" HOME="$isolation/home" \
+            PI_CODING_AGENT_DIR="$isolation/agent" PI_OFFLINE=1 PI_TELEMETRY=0 \
+            PI_VERSION="$PI_VERSION" sh -eu -c '
+              actual="$(./node_modules/.bin/pi --version)"
+              printf "Pi CLI: %s\n" "$actual"
+              test "$actual" = "$PI_VERSION"
+              npm run check
+              npm pack --dry-run
+            '
